@@ -1,0 +1,7 @@
+interface:
+  display_name: 'Writing to Isolated Workspace'
+  short_description: 'Keep agent writes inside an isolated workspace'
+  default_prompt: 'Use $writing-to-isolated-workspace to keep all writes inside the isolated workspace.'
+
+policy:
+  allow_implicit_invocation: true
