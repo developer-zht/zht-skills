@@ -1,0 +1,25 @@
+# <type>(<scope>): <subject>
+
+#
+
+# type : feat fix docs style refactor perf test build ci chore revert
+
+# scope : 可选，如 writing-to-isolated-workspace / marketplace / repo / ci / docs
+
+# subject : 祈使句，不以句号结尾，不超过 150 字符
+
+#
+
+# 空一行后写正文（可选）：为什么需要这次改动？如何解决问题？有什么副作用？
+
+#
+
+# 空一行后写页脚（可选）：
+
+# Closes #12
+
+# BREAKING CHANGE: <说明>
+
+#
+
+# 提示：跑 `npm run commit` 有交互式选单，不用手敲这个格式。
