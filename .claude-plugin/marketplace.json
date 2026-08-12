@@ -1,0 +1,24 @@
+{
+  "name": "zht-skills-marketplace",
+  "id": "zht-skills-marketplace",
+  "owner": {
+    "name": "developer-zht"
+  },
+  "metadata": {
+    "description": "Personal skill collection for agentic coding tools",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "zht-skills",
+      "source": "./",
+      "description": "Constrains agent writes to an isolated workspace directory, keeping the project source tree read-only",
+      "version": "0.1.0",
+      "author": {
+        "name": "developer-zht"
+      },
+      "keywords": ["workspace", "guardrail", "write-scope"],
+      "category": "workflow"
+    }
+  ]
+}
