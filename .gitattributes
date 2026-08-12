@@ -1,0 +1,13 @@
+# 仓库内统一存 LF，检出时也用 LF
+* text=auto eol=lf
+
+# 明确文本类型
+*.md    text
+*.json  text
+*.yml   text
+*.yaml  text
+
+# 二进制文件不做换行符转换（以后加截图用得上）
+*.png   binary
+*.jpg   binary
+*.gif   binary

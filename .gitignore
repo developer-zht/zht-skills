@@ -1,0 +1,40 @@
+# ── macOS ──
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# ── Windows ──
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ── Linux ──
+*~
+.directory
+.Trash-*
+.fuse_hidden*
+
+# ── 编辑器 ──
+.vscode/*
+# 格式化规则、拼写词典，团队该统一
+!.vscode/settings.json
+# 推荐扩展列表，新人打开就提示装
+!.vscode/extensions.json
+# 调试配置，团队共用
+!.vscode/launch.json
+# 任务配置
+!.vscode/tasks.json
+.idea/
+*.swp
+*.swo
+*.sublime-workspace
+
+# ── AI 工具的本地配置（注意：不要误伤 .claude-plugin/）──
+.claude/
+
+# ── Node ──
+node_modules/

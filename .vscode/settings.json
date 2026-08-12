@@ -1,0 +1,7 @@
+{
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.patterns": {
+    ".env": ".env.*",
+    ".gitignore": ".gitattributes, .gitmodules, .gitmessage, .mailmap"
+  }
+}
