@@ -1,187 +1,271 @@
 ---
 name: writing-to-isolated-workspace
-description: Use when starting any agent session launched from a project folder, before writing any file, when the user grants or narrows write permission or switches permission modes, and when deciding where conversation output — notes, docs, analysis, designs, experimental code — should be saved.
+description: Provides a cross-tool write-scope and consent protocol for project-based agent sessions. Use at session start, before any file write, when the user changes allowed write paths or duration, or when deciding where generated notes, documents, analyses, designs, or experimental code should be saved.
 ---
 
-# writing-to-isolated-workspace
+# Writing to Isolated Workspace
 
-## Overview
+## Purpose
 
-Agent 的读范围是整个项目，写范围默认只有一个隔离目录。
+Treat this Skill as a behavioral consent protocol, not a filesystem sandbox.
 
-**核心原则：读全项目，写只进 `<模型名>-workspace/`。**
+Default behavior:
 
-本文件是**公共默认值**。用户的个人配置（memory、CLAUDE.md / AGENTS.md、当轮指示）
-覆盖这里的任何默认值。
+- Read the whole project when the runtime permits it.
+- Write only inside `<agent-name>-workspace/`.
+- Do not modify project source unless the user explicitly authorizes exact paths.
+- Keep Git mutations separate from file-edit authorization.
 
-## 默认状态
+This Skill never grants tool permission and cannot guarantee that the source tree
+is read-only. Runtime permissions, hooks, sandboxing, or OS-level mounts must
+enforce a hard filesystem boundary.
 
-**每个新 session 的第一轮起自动生效**，与项目根下有没有文件、有没有 `git init` 无关，
-也与用户是否提过这件事无关。适用于所有通过文件夹启动的 agent 对话。
+Write user-facing notices in the user's current language. The Chinese templates
+below define the required information, not a fixed output language.
 
-| 能力       | 范围                                              |
-| ---------- | ------------------------------------------------- |
-| 读         | 项目根下所有文件，不受限制                        |
-| 写         | 仅 `<模型名>-workspace/` 及其子目录               |
-| 改项目源码 | 不直接改 —— 贴完整内容 + 给可执行命令，由用户落盘 |
+## Resolve the project and workspace
 
-`<模型名>` 取你所属 agent 的通用名，小写、不带版本号：
-`claude-workspace/`、`codex-workspace/`、`gemini-workspace/`。
-项目根下已有对应目录就沿用，没有就创建。
+At the start of a project-based session:
 
-### 落点
+1. Resolve the real path of the current project root.
+2. Determine the generic lowercase agent name without a version suffix:
+   `claude`, `codex`, or `gemini`.
+3. Use `<agent-name>-workspace/` as the default writable directory.
+4. Reuse the directory if it exists; otherwise create it only when a write is needed.
+5. Resolve every target's real path before writing.
+6. Reject symlinks that resolve outside the currently authorized paths.
 
-产出放在 `<模型名>-workspace/<主题>/`：
+Store generated artifacts in:
 
-1. 用户指定了子目录名 → 原样使用，不自作主张改名
-2. 用户没指定 → 自取一个能体现本次对话主题的名字
+`<agent-name>-workspace/<topic>/`
 
-子目录名**只标主题，不带模型名前缀**。白名单看完整路径，父目录已经满足条件，
-`claude-workspace/claude-notes/` 属于冗余。
+Use the user's topic-directory name exactly when provided. Otherwise choose a
+short descriptive name without repeating the agent name.
 
-### "第一次对话"的含义
+## Session state
 
-指**新开 session 后的第一次问答**，不是项目的第一个 session。
-每个新 session 都从默认状态起算，**不继承上一 session 的临时放宽**。
+Track these values independently:
 
-## 会话开场：声明当前写入权限
+1. Allowed write paths:
+   - `<agent-name>-workspace/` only
+   - exact user-specified paths
+   - the entire project
 
-每个会话第一轮都要声明，**默认状态下也要**——用户需要知道起点在哪，
-否则无从判断自己要改的是哪一项。
+2. Duration:
+   - current session only
+   - persistent across new sessions
 
-**用哪个版本：** 项目根下 `<模型名>-workspace/` 不存在 → 完整版；存在 → 一行版。
-（目录被用户删掉导致重复出完整版，是无害的误判，不必规避。）
+3. Git mutations:
+   - none by default
+   - only the exact operations explicitly authorized by the user
 
-**放在哪：** 默认状态时放在回答**之后**（无风险，它是参考资料，不该挡在正文前）；
-存在任何放宽时放在回答**之前**（那是风险状态，用户该先知道我这轮可能动了什么）。
+Never infer one value from another.
 
-### 完整版必须包含四样，缺一不可
+Do not use `global`, `local`, `提权`, or `作用域` when explaining these values
+to the user. State the paths, duration, and Git operations directly.
 
-1. 两项的当前取值，标明"现在是这一档"
-2. 每一项**还有哪些取值** —— 只给当前值等于没说，用户不知道自己能要什么
-3. **怎么改**：直接说，附 2–3 个可照抄的例句
-4. **不选、或只选一半，会发生什么**
+## Default state
 
-照这个样子写：
+When no valid persistent record or current-session authorization exists:
 
+- Allowed write paths: `<agent-name>-workspace/`
+- Duration: current session
+- Git mutations: none
+- Transcript copies: disabled unless the user opts in
+
+A temporary authorization never carries into a new session.
+
+## Opening notice
+
+On the first response of every new project session, state the current values.
+
+When no workspace exists, include the full notice after the main answer:
+
+```text
+📁 关于我写文件的方式
+
+我可以读取这个项目，但默认只往 `<模型名>-workspace/` 写文件。
+这是一条行为规则，不代表系统已经把源码目录锁成只读。
+
+① 可以写哪些路径
+   · 只写 `<模型名>-workspace/`        ← 当前
+   · 你明确指定的路径
+   · 整个项目
+
+② 这个设定持续多久
+   · 只管当前会话                       ← 当前
+   · 长期，在新会话中恢复
+
+修改文件不自动授权删除、移动文件或执行 Git 写操作。
+
+可以这样说：
+  「只修改 README.md，这次会话」
+  「docs/ 可以写，长期」
+  「收回，只写 workspace」
+
+📝 如果本轮写文件，是否也把完整内容贴进对话？不回答则默认不贴。
 ```
-📁 关于我写文件的方式（第一次在这个项目对话，说明一次）
 
-我读得到这个项目里的所有文件，但默认只往一个目录写东西：<模型名>-workspace/。
-你的源码我不动。需要改的时候，我把完整内容贴给你，附一条可直接执行的命令，由你落盘。
+When the workspace already exists, use the short form:
 
-这件事有两个方面，可以分开调：
-
-  ① 我能写哪些路径
-       · 只写 <模型名>-workspace/        ← 现在是这一档
-       · 你指定的目录，比如「docs/ 和 README.md 可以写」
-       · 整个项目
-
-  ② 这个设定管多久
-       · 只管这次对话                    ← 现在是这一档
-       · 长期，以后新开的对话继续沿用
-
-要改，直接说，把两个方面都讲清楚就行：
-    「整个项目，只管这次」
-    「docs/ 可以写，长期」
-    「收回，只写 workspace」
-
-不说的话 → 保持上面标「现在是这一档」的两项，我不会自己放宽。
-只说一个方面 → 另一个方面维持原样，我不替你补。
+```text
+写入范围：只写 `<模型名>-workspace/` ｜ 当前会话 ｜ Git 写操作：未授权
+📝 写盘内容是否也贴进对话？不回答则默认不贴。
 ```
 
-### 一行版
+When a persistent grant exists, place the notice before the main answer and
+include its source and date.
 
-默认状态：
+## Adjusting write access
 
+A complete authorization has two independent values:
+
+| Value | Options |
+| --- | --- |
+| Allowed write paths | workspace only, exact user-specified paths, or the entire project |
+| Duration | current session or persistent |
+
+Ask only for the missing value. Never infer one value from the other.
+
+When the user changes a tool permission mode:
+
+- Treat the change as applying only to the current session.
+- Do not infer that the user expanded the allowed write paths.
+- Confirm before expanding the paths.
+- When the mode becomes stricter, return to the stricter boundary without delay.
+
+If a spoken instruction conflicts with the tool mode, explain the conflict and
+ask the user to decide. If it remains unresolved on the next turn, return to the
+default workspace-only state.
+
+## Writing outside the workspace
+
+By default, do not write outside the authorized paths. Provide the complete
+content and an executable command so the user can apply it.
+
+An explicit request such as "你帮我改 README.md" authorizes only the exact
+target files required for that named task and only for the current turn.
+
+Before the first write, state the exact resolved file list and excluded operations:
+
+```text
+本轮仅修改 `README.md`；不删除或移动文件，不修改其他文件，
+不执行 `git add`、`git commit`、`git push` 或其他 Git 写操作。
 ```
-写入权限：只写 <模型名>-workspace/ ｜ 只管这次对话 ｜ 想改就说范围和期限
+
+Apply these rules:
+
+- If the target list is clear, state the boundary and proceed.
+- If the target is ambiguous, ask for the exact files before writing.
+- Do not create, delete, rename, or move files unless explicitly authorized.
+- Do not infer Git mutation permission from file-edit permission.
+- Read-only inspection such as `git status` and `git diff` is separate.
+- If another file becomes necessary, stop and request the additional path.
+- After completion, list every modified file.
+- Never carry the exception into another turn or session.
+
+## Persistent authorization
+
+Do not create a persistent authorization record merely because this Skill was
+invoked.
+
+Only create one after the user has:
+
+1. Named the exact write paths.
+2. Explicitly selected persistent duration.
+3. Separately authorized creating or updating
+   `.agent-policy/write-scope.json`.
+
+Use this format:
+
+```json
+{
+  "schema_version": 1,
+  "status": "active",
+  "project_realpath": "/absolute/real/project/path",
+  "write_paths": ["docs/", "README.md"],
+  "duration": "persistent",
+  "granted_by": "user",
+  "granted_at": "YYYY-MM-DD",
+  "expires_at": null,
+  "git_operations": []
+}
 ```
 
-存在长期放宽（**必须写明来源和日期**）：
+This file is a consent record, not a native Claude Code or Codex configuration
+file. It has no effect unless this Skill reads and validates it.
 
-```
-⚠️ 写入权限：整个项目 ｜ 长期（你 2026-08-10 授予）｜ 说一声即可随时收回
-```
+On every new session:
 
-## 调整写入权限
+1. Read the record if it exists.
+2. Ignore it if it is tracked by Git.
+3. Validate its JSON and schema version.
+4. Require an exact `project_realpath` match.
+5. Reject expired or revoked records.
+6. Resolve every recorded path and reject paths outside the project.
+7. If any check fails, return to the default state and warn the user.
 
-用户指示无条件高于本文件的规定 —— 但**执行前必须确认一次**。
+Memory may point to the record but must never grant or expand write permission
+by itself.
 
-一次完整的授权要落到两项上，**缺哪项问哪项**：
+If the user revokes a persistent grant, mark the record as revoked or ask the
+user to remove it. Do not silently delete authorization records.
 
-|                  | 回答什么 | 取值                                                     |
-| ---------------- | -------- | -------------------------------------------------------- |
-| ① 我能写哪些路径 | 写入范围 | 只写 `<模型名>-workspace/` ／ 用户指定的目录 ／ 整个项目 |
-| ② 这个设定管多久 | 有效期   | 只管这次对话 ／ 长期（新开对话继续沿用）                 |
+## Before every write
 
-两项**互相独立**，任意组合。"长期 + 只写 workspace"和"只管这次 + 整个项目"
-都是合法状态，**不存在级别高低**——不要把一项的取值当成另一项的暗示。
+Before writing a file:
 
-- 用户用**文字**授权 → 缺哪项就问哪项，**不从一项推断另一项**。
-- 用户切换**权限模式** → 有效期天然只能是"只管这次对话"，
-  **写入范围不变**（见"已知限制"）。
+1. Resolve the target's real path.
+2. Check that it is inside an authorized path.
+3. Check the authorization source and duration.
+4. Check whether deletion, movement, or Git mutation is involved.
+5. If any answer is missing or ambiguous, use the default state.
 
-⚠️ **禁止使用 global、local、"提权"、"作用域"这几个词**（无论对用户还是在内部推理里）。
-它们无法自解释，且会把两项混成一项 —— 这个坑已经真实发生过：
-用户说"从 global 改成 local"，本意是收窄写入范围，字面意思却只是缩短有效期。
-一律用上表左列那种大白话。
+Tool approval is not equivalent to user authorization.
 
-### 白名单外的写入
+## Transcript copies
 
-默认不写：把**完整内容贴在对话里**，附一条用户可直接执行的命令，由用户落盘。
+Ask at the beginning of each session whether files written to disk should also
+be reproduced in the conversation.
 
-用户当轮明确说"你帮我改" → 这是一次性放宽：执行，但事后**明确列出**
-动了哪些 workspace 外的文件，便于复核或回滚。只管这一轮，不延续。
+If the user does not answer by the next turn, default to not reproducing them.
 
-## 六条细则
+This preference changes only conversation output. It never changes the allowed
+write paths or their duration.
 
-- **a. 权限模式 严格→宽松：先确认用户意图，才能扩大写入范围。**
-  用户改模式常常只是不想被确认打断、或人不在电脑前，**不等于**要放开写范围。
-- **b. 宽松→严格：无需提醒**，自行退回受限写权限。
-- **c. 存在长期放宽时，开场声明放在回答之前**，并写明授权来源和日期。
-  （默认状态下放在回答之后。）
-- **d. 用户可随时调整写入权限**，两项都可改，随时生效。
-- **e. 冲突时提醒并交用户决定。** 典型冲突：用户口头收窄，但权限模式仍在替用户批准写入。
-  下一轮用户仍未决定 → 退回最严格，只写 `<模型名>-workspace/`。
-- **f. 每个对话开始询问是否要把写盘内容誊抄进对话框；下一轮未回答 → 默认不誊抄。**
+## Hard isolation
 
-两条贯穿原则：
+For real filesystem isolation, configure the runtime or operating system so that:
 
-- **fail-safe（a/b 与 d/e 共享）：放松要确认，收紧不必；僵持不下退回最严格。**
-- c 与 f 同一轮触发时**分两行说**，不要挤成一句。
+- the project source is read-only;
+- `<agent-name>-workspace/` is a separate writable mount or allowed root;
+- symlink escapes are rejected;
+- shell processes inherit the same restriction.
 
-## 已知限制：权限模式不总是可检测
+Do not claim hard isolation unless this enforcement has been verified.
 
-**权限模式**指由工具界面（而非对话文字）设定的授权状态，有效期天然限于单个 session。
-不要去记具体工具叫什么名字，抓住这两个特征即可跨工具适用。
+## Fail-safe rule
 
-规则 a 的可执行性因模式而异：在**工具层自动放行**的模式下，你拿到的工具返回值
-与"用户逐条点了同意"完全一样，分辨不出差别 —— 规则 a 会**静默失效**，
-而你会以为自己被授权了。
+Apply this rule everywhere:
 
-因此有一条不依赖检测的兜底：
+- Expanding write access requires confirmation.
+- Narrowing write access does not.
+- Missing, stale, conflicting, or unverifiable authorization returns to the
+  default workspace-only state.
 
-> **每次要写 `<模型名>-workspace/` 之外的文件之前，先自查当前写入权限：
-> 这一轮的写入范围是谁给的？有效期到什么时候？是否还有效？
-> 答不上来就按默认状态办。**
+The fact that a tool permits an operation does not prove that the user authorized it.
 
-这一步任何模式下都成立。**"工具没拦我" ≠ "用户授权了我"。**
+## Common mistakes
 
-## Common Mistakes
-
-| 错误                                  | 正确做法                                   |
-| ------------------------------------- | ------------------------------------------ |
-| 开场只报当前值，不说还有哪些选项      | 完整版四样缺一不可，用户要知道自己能要什么 |
-| 默认状态就省略开场声明                | 默认状态也要声明，用户需要知道起点         |
-| 用户只说了有效期，顺手也改了写入范围  | 两项独立，没说的那项维持原样               |
-| 对用户说"global 提权已生效"           | 禁用这些词，改说"整个项目 ｜ 长期"         |
-| 在项目根另起 `claude-notes/`          | 收进 `claude-workspace/notes/`             |
-| 建成 `claude-workspace/claude-notes/` | 前缀冗余 → `claude-workspace/notes/`       |
-| 把产出写进 `.claude/`、`.codex/`      | 那是工具自身的配置目录，不是工作区         |
-| 沿用上一 session 的临时放宽           | 新 session 从默认状态起算                  |
-| 权限模式变宽松就放开写范围            | 规则 a：先确认意图                         |
-| 工具没拦住就当作已授权                | 写 workspace 外的文件前先自查授权来源      |
-| 用户收窄后仍按旧权限写                | 规则 e：提醒 → 未决定则退回最严格          |
-| "只改一行，直接动 src/ 吧"            | 行数不构成豁免，贴内容 + 给命令            |
-| 假设 `<模型名>-workspace/` 已存在     | 先查，不存在先建                           |
+| Mistake | Required behavior |
+| --- | --- |
+| Treating Skill invocation as system permission | Keep behavioral consent and runtime permission separate |
+| Writing `.agent-policy/` automatically | Request authorization for that exact file |
+| Treating "你帮我改" as whole-project access | List exact files before writing |
+| Editing extra files because they seem necessary | Request expansion first |
+| Treating file edits as Git authorization | Require separate Git consent |
+| Trusting a policy file from Git | Ignore tracked policy files |
+| Following a workspace symlink into source | Resolve real paths and reject escape |
+| Forgetting the transcript question | Include it in both opening templates |
+| Carrying temporary access into a new session | Restore the default state |
+| Treating tool approval as user consent | Check the authorization source and duration |

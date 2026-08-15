@@ -1,6 +1,5 @@
 {
   "name": "zht-skills-marketplace",
-  "id": "zht-skills-marketplace",
   "owner": {
     "name": "developer-zht"
   },
@@ -12,7 +11,7 @@
     {
       "name": "zht-skills",
       "source": "./",
-      "description": "Constrains agent writes to an isolated workspace directory, keeping the project source tree read-only",
+      "description": "Provides a write-scope consent protocol that keeps agent-generated files in an isolated workspace by default",
       "version": "0.1.0",
       "author": {
         "name": "developer-zht"
