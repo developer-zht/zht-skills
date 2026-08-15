@@ -1,7 +1,7 @@
 interface:
   display_name: 'Writing to Isolated Workspace'
-  short_description: 'Keep agent writes inside an isolated workspace'
-  default_prompt: 'Use $writing-to-isolated-workspace to keep all writes inside the isolated workspace.'
+  short_description: 'Apply scoped write-consent rules to project files'
+  default_prompt: 'Use $writing-to-isolated-workspace to keep generated files in the agent workspace by default and require explicit paths for exceptions.'
 
 policy:
   allow_implicit_invocation: true
