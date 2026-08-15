@@ -36,5 +36,9 @@ $RECYCLE.BIN/
 # ── AI 工具的本地配置（注意：不要误伤 .claude-plugin/）──
 .claude/
 
+# ── Agent 隔离工作区（一次性产出，不入库）──
+codex-workspace/
+claude-workspace/
+
 # ── Node ──
 node_modules/
