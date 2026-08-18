@@ -7,9 +7,8 @@
     {
       "name": "zht-skills",
       "source": {
-        "source": "url",
-        "url": "https://github.com/developer-zht/zht-skills.git",
-        "ref": "main"
+        "source": "local",
+        "path": "./plugins/zht-skills"
       },
       "policy": {
         "installation": "AVAILABLE",
