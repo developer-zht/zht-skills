@@ -30,13 +30,13 @@ PR 合并采用 squash 方式，进入主干历史的是 PR 标题，因此 PR �
 
 ## 新增或修改 Skill
 
-1. 每个 Skill 位于 `skills/<skill-name>/SKILL.md`。
-2. frontmatter 的 `name` 必须与文件夹名完全一致。
+1. 每个 Skill 位于 `plugins/<plugin-name>/skills/<skill-name>/SKILL.md`。
+2. frontmatter 的 `name` 必须与 Skill 文件夹名完全一致。
 3. `name` 只能使用小写字母、数字和连字符，不得连续或首尾使用连字符，长度少于 64 个字符。
 4. `description` 应简洁说明该 Skill **做什么**以及**什么时候使用**。
 5. `description` 不得复述具体步骤或完整工作流，详细规则写在正文中。
 6. 通用 frontmatter 只使用 `name` 和 `description`；平台专属展示信息放在对应平台文件中。
-7. 修改 `SKILL.md` 后，检查 `agents/openai.yaml` 是否仍与其一致。
+7. 修改 `SKILL.md` 后，检查同一 Skill 目录下的 `agents/openai.yaml` 是否仍与其一致。
 
 推荐的 description 形式：
 
@@ -48,12 +48,12 @@ description: Briefly states the capability. Use when the concrete triggering con
 
 当 Skill 的能力边界或名称发生变化时，检查：
 
-- `skills/<skill-name>/agents/openai.yaml`
+- `plugins/<plugin-name>/skills/<skill-name>/agents/openai.yaml`
 - `README.md`
 - `.claude-plugin/marketplace.json`
-- `.claude-plugin/plugin.json`
-- `.codex-plugin/plugin.json`
 - `.agents/plugins/marketplace.json`
+- `plugins/<plugin-name>/.claude-plugin/plugin.json`
+- `plugins/<plugin-name>/.codex-plugin/plugin.json`
 
 只修改真正受影响的文件。不要为了“一致”机械地改版本或重写无关字段。
 

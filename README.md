@@ -139,14 +139,20 @@ Agent 应在写入前声明：
 
 ```bash
 git clone https://github.com/developer-zht/zht-skills.git
-ln -s "$(pwd)/zht-skills/skills/writing-to-isolated-workspace" ~/.claude/skills/writing-to-isolated-workspace
+ln -s "$(pwd)/zht-skills/plugins/zht-skills/skills/writing-to-isolated-workspace" ~/.claude/skills/writing-to-isolated-workspace
 ```
 
-仓库同时包含 Codex 插件 manifest 和 marketplace 配置：
+仓库根目录保存 Claude Code 和 Codex 的 marketplace 配置：
 
-- `.codex-plugin/plugin.json`
+- `.claude-plugin/marketplace.json`
 - `.agents/plugins/marketplace.json`
-- `skills/writing-to-isolated-workspace/agents/openai.yaml`
+
+`zht-skills` 插件本体位于 `plugins/zht-skills/`，其中包含：
+
+- `plugins/zht-skills/.claude-plugin/plugin.json`
+- `plugins/zht-skills/.codex-plugin/plugin.json`
+- `plugins/zht-skills/skills/writing-to-isolated-workspace/SKILL.md`
+- `plugins/zht-skills/skills/writing-to-isolated-workspace/agents/openai.yaml`
 
 Codex 的具体安装入口可能随客户端版本和产品界面变化，应使用当前 Codex 插件市场或官方安装入口。
 
@@ -170,7 +176,7 @@ Codex 的具体安装入口可能随客户端版本和产品界面变化，应�
 - 无法确认时退回 workspace-only。
 - 行为协议与系统权限必须分别描述。
 
-完整规则见 [`skills/writing-to-isolated-workspace/SKILL.md`](skills/writing-to-isolated-workspace/SKILL.md)。
+完整规则见 [`plugins/zht-skills/skills/writing-to-isolated-workspace/SKILL.md`](plugins/zht-skills/skills/writing-to-isolated-workspace/SKILL.md)。
 
 ## 贡献
 
