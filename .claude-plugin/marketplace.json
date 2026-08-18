@@ -10,7 +10,7 @@
   "plugins": [
     {
       "name": "zht-skills",
-      "source": "./",
+      "source": "./plugins/zht-skills",
       "description": "Provides a write-scope consent protocol that keeps agent-generated files in an isolated workspace by default",
       "version": "0.1.0",
       "author": {
