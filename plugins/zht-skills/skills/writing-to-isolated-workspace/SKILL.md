@@ -25,15 +25,17 @@ below define the required information, not a fixed output language.
 
 ## Resolve the project and workspace
 
-At the start of a project-based session:
+Before answering the project task:
 
-1. Resolve the real path of the current project root.
-2. Determine the generic lowercase agent name without a version suffix:
-   `claude`, `codex`, or `gemini`.
-3. Use `<agent-name>-workspace/` as the default writable directory.
-4. Reuse the directory if it exists; otherwise create it only when a write is needed.
-5. Resolve every target's real path before writing.
-6. Reject symlinks that resolve outside the currently authorized paths.
+1. Resolve the project real path.
+2. Check whether `.agent-policy/write-scope.json` exists.
+3. If it exists, validate its Git tracking state, JSON, schema, status,
+   project realpath, expiration, and resolved write paths.
+4. Restore the persistent state when valid. Otherwise record the failure
+   reason and return to workspace-only.
+5. Begin the first completed answer with exactly one notice block that
+   reflects the validated state.
+6. Answer the user's task only after the notice.
 
 Store generated artifacts in:
 
@@ -71,15 +73,23 @@ When no valid persistent record or current-session authorization exists:
 - Allowed write paths: `<agent-name>-workspace/`
 - Duration: current session
 - Git mutations: none
-- Transcript copies: disabled unless the user opts in
+- Transcript-copy preference: pending until the user's next turn
 
 A temporary authorization never carries into a new session.
 
 ## Opening notice
 
-On the first response of every new project session, state the current values.
+The first user-facing response of every new project session MUST include exactly
+one of the notice blocks below.
 
-When no workspace exists, include the full notice after the main answer:
+This requirement applies even when the current task is read-only and even when
+no file write is expected. Do not omit, summarize, or defer the notice.
+
+The transcript-copy line MUST remain an unanswered question in this first
+response. Do not infer an answer from the user's silence or from the absence of
+an explicit request to reproduce file contents.
+
+When no workspace exists, begin the first completed answer with the full notice:
 
 ```text
 📁 关于我写文件的方式
@@ -103,7 +113,8 @@ When no workspace exists, include the full notice after the main answer:
   「docs/ 可以写，长期」
   「收回，只写 workspace」
 
-📝 如果本轮写文件，是否也把完整内容贴进对话？不回答则默认不贴。
+📝 本轮如果写文件，是否也要把文件完整内容贴进对话？
+   如果你下一条消息仍未回答，我将默认不贴。
 ```
 
 When the workspace already exists, use the short form:
@@ -225,13 +236,23 @@ Tool approval is not equivalent to user authorization.
 
 ## Transcript copies
 
-Ask at the beginning of each session whether files written to disk should also
+Set the transcript-copy preference to `pending` at the start of each new
+project session.
+
+Ask in the first user-facing response whether files written to disk should also
 be reproduced in the conversation.
 
-If the user does not answer by the next turn, default to not reproducing them.
+Do not treat the absence of an explicit request as an answer. Do not select the
+default in the same response that asks the question.
 
-This preference changes only conversation output. It never changes the allowed
-write paths or their duration.
+If the user's next message does not answer the question, change the preference
+from `pending` to `disabled` and do not reproduce complete file contents.
+
+If the user answers, store the preference for the current session. Do not ask
+again unless the user changes it.
+
+This preference changes only conversation output. It never changes allowed
+write paths, authorization duration, or Git permissions.
 
 ## Hard isolation
 
