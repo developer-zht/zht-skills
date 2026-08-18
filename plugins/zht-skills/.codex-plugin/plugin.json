@@ -1,0 +1,22 @@
+{
+  "name": "zht-skills",
+  "version": "0.1.0",
+  "description": "Personal skill collection for agentic coding tools",
+  "author": {
+    "name": "developer-zht"
+  },
+  "homepage": "https://github.com/developer-zht/zht-skills",
+  "repository": "https://github.com/developer-zht/zht-skills",
+  "license": "MIT",
+  "keywords": ["workspace", "guardrail", "write-scope"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "zht Skills",
+    "shortDescription": "Control where coding agents may write files",
+    "longDescription": "Cross-tool skills for defining file-write boundaries, consent, persistent authorization, and separate Git permissions.",
+    "developerName": "developer-zht",
+    "category": "Productivity",
+    "capabilities": ["Scoped file writes", "Persistent write authorization"],
+    "defaultPrompt": ["Set safe write boundaries for this project."]
+  }
+}
